@@ -10,9 +10,7 @@ from time import gmtime, strftime
 from models import *
 from dataset_GBU import FeatDataLayer, DATA_LOADER
 from utils import *
-# from sklearn.metrics.pairwise import cosine_similarity
 import torch.backends.cudnn as cudnn
-import classifier
 import classifier_attdec
 
 parser = argparse.ArgumentParser()
@@ -57,7 +55,7 @@ parser.add_argument('--S_dim', type=int, default=1024)
 parser.add_argument('--NS_dim', type=int, default=1024)
 
 parser.add_argument('--gpu', default='0', type=str, help='index of GPU to use')
-parser.add_argument('--recon_weight', default=0.1, type=float, help='index of GPU to use')
+parser.add_argument('--recon_weight', default=0.1, type=float, help='semantic recon loss weight')
 opt = parser.parse_args()
 
 if opt.manualSeed is None:
@@ -154,13 +152,6 @@ def train():
         sample_C_n = labels.unique().shape[0]
         sample_label = labels.unique().cpu()
 
-        # 语义原型
-        # seen_A = np.array([dataset.train_att])
-        # seen_A = torch.from_numpy(seen_A).to(opt.gpu)
-        # seen_A = seen_A.squeeze() # [150, 312]
-        # print(opt.C_dim)
-        # print(seen_A.shape)
-
         x_mean, z_mu, z_var, z = model(X, C)
         loss, ce, kl = multinomial_loss_function(x_mean, X, z_mu, z_var, z, beta=beta)
 
@@ -171,9 +162,6 @@ def train():
             re_batch_labels.append(index[0][0])
         re_batch_labels = torch.LongTensor(re_batch_labels)
         one_hot_labels = torch.zeros(opt.batchsize, sample_C_n).scatter_(1, re_batch_labels.view(-1, 1), 1).to(opt.gpu)
-
-        # one_hot_labels = torch.tensor(
-        #     torch.zeros(opt.batchsize, sample_C_n).scatter_(1, re_batch_labels.view(-1, 1), 1)).to(opt.gpu)
 
         recon_C_fake = att_dec(x_mean)
         R_cost = opt.recon_weight * WeightedL1(recon_C_fake, C)
@@ -250,21 +238,12 @@ def train():
                 test_unseen_feature = ae.encoder(dataset.test_unseen_feature.to(opt.gpu))[:,:opt.S_dim].cpu()
                 test_seen_feature = ae.encoder(dataset.test_seen_feature.to(opt.gpu))[:,:opt.S_dim].cpu()
 
-                # train_dec = att_dec(dataset.train_feature.to(opt.gpu)).cpu()
-                # gen_feat_ori_dec = att_dec(gen_feat_ori.to(opt.gpu)).cpu()
-                # test_unseen_feature = att_dec(dataset.test_unseen_feature.to(opt.gpu)).cpu()
-                # test_seen_feature = att_dec(dataset.test_seen_feature.to(opt.gpu)).cpu()
-
             train_X = torch.cat((train_feature, gen_feat), 0)
-            # train_X = torch.cat((train_dec, gen_feat_ori_dec), 0)
             train_X_ori = torch.cat((dataset.train_feature.clone(), gen_feat_ori), 0)
             test_unseen_feature_ori = dataset.test_unseen_feature.clone()
             test_seen_feature_ori = dataset.test_seen_feature.clone()
 
             data_ori = [train_X_ori, test_unseen_feature_ori, test_seen_feature_ori]
-            # train_X = torch.cat((train_X, train_dec), 1)
-            # test_unseen_feature = torch.cat((test_unseen_feature, test_unseen_dec), 1)
-            # test_seen_feature = torch.cat((test_seen_feature, test_seen_dec), 1)
             train_Y = torch.cat((dataset.train_label, gen_label_ori + dataset.ntrain_class), 0)
             # can delete (only have gzsl)
             if opt.zsl:
