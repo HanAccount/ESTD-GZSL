@@ -80,13 +80,12 @@ def train():
     opt.y_dim = dataset.ntrain_class
     # out_dir = 'out_finetune/{}/b-{}_g-{}_lr-{}_sd-{}_dis-{}_nS-{}_nZ-{}_bs-{}_rw-{}_ft-{}'.format(opt.dataset,
     #                 opt.beta, opt.ga, opt.lr,opt.S_dim, opt.dis, opt.nSample, opt.Z_dim, opt.batchsize, opt.recon_weight, opt.finetune)
-    # out_dir = 'out/{}/wd-{}_b-{}_g-{}_lr-{}_sd-{}_dis-{}_nS-{}_nZ-{}_bs-{}_rw-{}'.format(opt.dataset, opt.weight_decay,
-    #                                                                                      opt.beta, opt.ga, opt.lr,
-    #                                                                                      opt.S_dim, opt.dis,
-    #                                                                                      opt.nSample, opt.Z_dim,
-    #                                                                                      opt.batchsize,
-    #                                                                                      opt.recon_weight)
-    out_dir = 'out_A5000/{}-oud/nS-{}_rw-{}_finetune-{}'.format(opt.dataset, opt.nSample, opt.recon_weight, opt.finetune)
+    out_dir = 'out/{}/wd-{}_b-{}_g-{}_lr-{}_sd-{}_dis-{}_nS-{}_nZ-{}_bs-{}_rw-{}'.format(opt.dataset, opt.weight_decay,
+                                                                                         opt.beta, opt.ga, opt.lr,
+                                                                                         opt.S_dim, opt.dis,
+                                                                                         opt.nSample, opt.Z_dim,
+                                                                                         opt.batchsize,
+                                                                                         opt.recon_weight)
     os.makedirs(out_dir, exist_ok=True)
     print("The output dictionary is {}".format(out_dir))
 
