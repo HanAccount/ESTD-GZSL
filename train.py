@@ -244,40 +244,29 @@ def train():
 
             data_ori = [train_X_ori, test_unseen_feature_ori, test_seen_feature_ori]
             train_Y = torch.cat((dataset.train_label, gen_label_ori + dataset.ntrain_class), 0)
-            # can delete (only have gzsl)
-            if opt.zsl:
-                """ZSL"""
-                cls = classifier_attdec.CLASSIFIER(att_dec,data_ori, opt, gen_feat, gen_label, dataset, test_seen_feature, test_unseen_feature,
-                                            dataset.ntrain_class + dataset.ntest_class, True, opt.classifier_lr, 0.5, 20,
-                                            opt.nSample, False)
-                result_zsl_soft.update(it, cls.acc)
-                log_print("ZSL Softmax:", log_dir)
-                log_print("Acc {:.2f}%  Best_acc [{:.2f}% | Iter-{}]".format(
-                    cls.acc, result_zsl_soft.best_acc, result_zsl_soft.best_iter), log_dir)
+            
+            """ GZSL"""
+            # att_dec=null:只使用hs训练分类器
+            cls = classifier_attdec.CLASSIFIER(att_dec, data_ori, opt, train_X, train_Y, dataset, test_seen_feature, test_unseen_feature,
+                                dataset.ntrain_class + dataset.ntest_class, True, opt.classifier_lr, 0.5,
+                                        opt.classifier_steps, opt.nSample, True)
 
-            else:
-                """ GZSL"""
-                # att_dec=null:只使用hs训练分类器
-                cls = classifier_attdec.CLASSIFIER(att_dec, data_ori, opt, train_X, train_Y, dataset, test_seen_feature, test_unseen_feature,
-                                    dataset.ntrain_class + dataset.ntest_class, True, opt.classifier_lr, 0.5,
-                                            opt.classifier_steps, opt.nSample, True)
+            result_gzsl_soft.update_gzsl(it, cls.acc_unseen, cls.acc_seen, cls.H)
 
-                result_gzsl_soft.update_gzsl(it, cls.acc_unseen, cls.acc_seen, cls.H)
+            log_print("GZSL Softmax:", log_dir)
+            log_print("U->T {:.2f}%  S->T {:.2f}%  H {:.2f}%  Best_H [{:.2f}% {:.2f}% {:.2f}% | Iter-{}]".format(
+                cls.acc_unseen, cls.acc_seen, cls.H,  result_gzsl_soft.best_acc_U_T, result_gzsl_soft.best_acc_S_T,
+                result_gzsl_soft.best_acc, result_gzsl_soft.best_iter), log_dir)
 
-                log_print("GZSL Softmax:", log_dir)
-                log_print("U->T {:.2f}%  S->T {:.2f}%  H {:.2f}%  Best_H [{:.2f}% {:.2f}% {:.2f}% | Iter-{}]".format(
-                    cls.acc_unseen, cls.acc_seen, cls.H,  result_gzsl_soft.best_acc_U_T, result_gzsl_soft.best_acc_S_T,
-                    result_gzsl_soft.best_acc, result_gzsl_soft.best_iter), log_dir)
-
-                if result_gzsl_soft.save_model:
-                    files2remove = glob.glob(out_dir + '/Best_model_GZSL_*')
-                    for _i in files2remove:
-                        os.remove(_i)
-                    save_model(it, model,ae,att_dec, opt.manualSeed, log_text,
-                               out_dir + '/Best_model_GZSL_H_{:.2f}_S_{:.2f}_U_{:.2f}.tar'.format(result_gzsl_soft.best_acc,
-                                                                                                 result_gzsl_soft.best_acc_S_T,
-                                                                                                 result_gzsl_soft.best_acc_U_T))
-            ###############################################################################################################
+            if result_gzsl_soft.save_model:
+                files2remove = glob.glob(out_dir + '/Best_model_GZSL_*')
+                for _i in files2remove:
+                    os.remove(_i)
+                save_model(it, model,ae,att_dec, opt.manualSeed, log_text,
+                           out_dir + '/Best_model_GZSL_H_{:.2f}_S_{:.2f}_U_{:.2f}.tar'.format(result_gzsl_soft.best_acc,
+                                                                                             result_gzsl_soft.best_acc_S_T,
+                                                                                             result_gzsl_soft.best_acc_U_T))
+        ###############################################################################################################
 
             model.train()
             ae.train()
